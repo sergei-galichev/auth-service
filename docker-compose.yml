@@ -1,0 +1,50 @@
+version: '3.7'
+
+services:
+  auth-service:
+    build:
+      context: ./
+      dockerfile: auth-service.dockerfile
+    ports:
+      - "${GRPC_PORT}:${GRPC_PORT}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      PG_DSN: ${PG_DSN}
+      GRPC_HOST: ${GRPC_HOST}
+      GRPC_PORT: ${GRPC_PORT}
+      LOG_LEVEL: ${LOG_LEVEL}
+      SECRET_KEY: ${SECRET_KEY}
+      ADMIN_KEY: ${ADMIN_KEY}
+      ACCESS_TTL: ${ACCESS_TTL}
+      REFRESH_TTL: ${REFRESH_TTL}
+
+  postgres:
+    image: 'postgres:14.2-alpine'
+    ports:
+      - "${PG_EXT_PORT}:5432"
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASS}
+      POSTGRES_DB: ${PG_DB_NAME}
+      POSTGRES_SSLMODE: ${PG_SSL}
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-q", "-d", "${PG_DB_NAME}", "-U", "${PG_USER}" ]
+      interval: 1s
+      timeout: 5s
+      retries: 5
+
+  migrator:
+    build:
+      context: ./
+      dockerfile: migrator.dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy

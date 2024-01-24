@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package auth_v1;
+option go_package = "log-book/auth-service/api/v1/auth;auth_v1";
+
+import "google/protobuf/empty.proto";
+
+service AuthServiceV1 {
+
+  // Register used to user registration
+  rpc Register(RegisterRequest) returns (google.protobuf.Empty){};
+
+  // Login used to user authentication
+  rpc Login(LoginRequest) returns (LoginResponse){};
+
+  // Logout used to user log out
+  rpc Logout(LogoutRequest) returns (google.protobuf.Empty){};
+}
+
+enum Role {
+  EMPLOYEE = 0;
+  MANAGER = 1;
+  ADMIN = 2;
+}
+
+message RegisterRequest {
+  string email = 1;
+  string password = 2;
+  string confirm_password = 3;
+  Role role = 4;
+  string admin_key = 5;
+}
+
+message LoginRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message LoginResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+}
+
+message LogoutRequest {
+  string access_token = 1;
+  string refresh_token = 2;
+}
+
+
+
