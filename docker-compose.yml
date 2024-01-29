@@ -41,6 +41,12 @@ services:
       timeout: 5s
       retries: 5
 
+  redis-cache:
+    image: redis:7.2.3-alpine3.18
+    restart: always
+    ports:
+      - "6379:6379"
+
   migrator:
     build:
       context: ./
