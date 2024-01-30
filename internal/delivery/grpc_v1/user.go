@@ -1,28 +1,29 @@
 package grpc_v1
 
 import (
+	"auth-service/internal/delivery/grpc_v1/dto"
 	auth_v1 "auth-service/pkg/grpc/v1/auth"
 	"context"
 	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 func (i *AuthImplementation) Register(ctx context.Context, req *auth_v1.RegisterRequest) (*empty.Empty, error) {
 	_ = ctx
-	pass := req.GetPassword()
-	confirmPass := req.GetConfirmPassword()
-	if pass != confirmPass {
-		return &empty.Empty{}, status.Error(codes.InvalidArgument, "Password mismatch")
+
+	_, err := i.userService.CreateUser(
+		&dto.UserCreateDTO{
+			Email:           req.GetEmail(),
+			Password:        req.GetPassword(),
+			ConfirmPassword: req.GetConfirmPassword(),
+			Role:            req.GetRole().String(),
+			AdminKey:        req.GetAdminKey(),
+		},
+	)
+	if err != nil {
+		return nil, err
 	}
 
-	email := req.GetEmail()
-	if !i.userService.CheckEmail(email) {
-		return &empty.Empty{}, status.Error(codes.InvalidArgument, "Email format error")
-	}
-
-	//i.userService.CreateUser()
 	return &empty.Empty{}, nil
 }
 

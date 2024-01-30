@@ -6,6 +6,8 @@ import (
 	userRepo "auth-service/internal/repository/user/postgres"
 	services "auth-service/internal/service"
 	userService "auth-service/internal/service/user"
+	"auth-service/pkg/cache"
+	"auth-service/pkg/cache/redis"
 	"auth-service/pkg/logging"
 	"auth-service/pkg/storage/postgres"
 )
@@ -18,6 +20,8 @@ type serviceProvider struct {
 	authImplementation *auth_v1.AuthImplementation
 
 	storage *postgres.Storage
+
+	cache cache.Repository
 
 	logger *logging.Logger
 }
@@ -43,10 +47,20 @@ func (s *serviceProvider) UserRepository() repositories.UserRepository {
 	return s.userRepo
 }
 
+func (s *serviceProvider) UserCache() cache.Repository {
+	if s.cache == nil {
+		s.cache = redis.NewCache()
+	}
+	s.logger.Debug("UserCache created")
+
+	return s.cache
+}
+
 func (s *serviceProvider) UserService() services.UserService {
 	if s.userService == nil {
 		s.userService = userService.NewService(
 			s.UserRepository(),
+			s.UserCache(),
 		)
 	}
 	s.logger.Debug("UserService created")

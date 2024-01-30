@@ -1,10 +1,9 @@
 package service
 
 import (
-	"auth-service/internal/domain/user"
+	"auth-service/internal/delivery/grpc_v1/dto"
 )
 
 type UserService interface {
-	CreateUser(user *user.User) (int64, error)
-	CheckEmail(email string) bool
+	CreateUser(user *dto.UserCreateDTO) (int64, error)
 }

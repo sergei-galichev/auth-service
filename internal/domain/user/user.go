@@ -2,8 +2,6 @@ package user
 
 import (
 	"database/sql"
-	"regexp"
-	"strings"
 	"time"
 )
 
@@ -25,8 +23,6 @@ var Roles = map[int32]string{
 	2: "ADMIN",
 }
 
-var regexpEmail = regexp.MustCompile(`^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,4}$`)
-
 func NewUser(
 	uuid string,
 	email string,
@@ -40,8 +36,4 @@ func NewUser(
 		Role:      role,
 		CreatedAt: time.Now(),
 	}
-}
-
-func IsValidEmail(email string) bool {
-	return regexpEmail.MatchString(strings.ToLower(email))
 }

@@ -2,7 +2,9 @@ package redis
 
 import (
 	"auth-service/pkg/cache"
+	"auth-service/pkg/logging"
 	"context"
+	redisCache "github.com/go-redis/cache/v9"
 	"github.com/redis/go-redis/v9"
 	"sync"
 	"time"
@@ -12,38 +14,48 @@ var _ cache.Repository = (*repository)(nil)
 
 type repository struct {
 	*sync.RWMutex
-	client *redis.Client
+	rc *redisCache.Cache
 }
 
-func NewCacheRepository(size int) cache.Repository {
+func NewCache() cache.Repository {
+	logger := logging.GetLogger()
 
-	client := redis.NewClient(&redis.Options{
-		Addr:     "redis-cache:6379",
-		Password: "",
-		DB:       0,
-	})
+	client := redis.NewClient(
+		&redis.Options{
+			Addr: "redis-cache:6379",
+			DB:   0,
+		},
+	)
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	_ = ctx
+	err := client.Ping(ctx).Err()
+	if err != nil {
+		logger.Fatal("Failed to ping redis: ", err)
+	}
+
+	rc := redisCache.New(
+		&redisCache.Options{
+			Redis: client,
+		},
+	)
 
 	return &repository{
-		client: client,
+		rc: rc,
 	}
-}
-
-func (r *repository) GetIterator() cache.Iterator {
-	//TODO implement me
-	panic("implement me")
 }
 
 func (r *repository) Get(key []byte) ([]byte, error) {
 	ctx := context.Background()
+	var value []byte
 
 	r.RLock()
 	defer r.RUnlock()
 
-	return r.client.Get(ctx, string(key)).Bytes()
+	err := r.rc.Get(ctx, string(key), value)
+
+	return value, err
 }
 
 func (r *repository) Set(key []byte, value []byte, duration time.Duration) error {
@@ -51,8 +63,14 @@ func (r *repository) Set(key []byte, value []byte, duration time.Duration) error
 
 	r.Lock()
 	defer r.Unlock()
+	item := &redisCache.Item{
+		Ctx:   ctx,
+		Key:   string(key),
+		Value: value,
+		TTL:   duration,
+	}
 
-	return r.client.Set(ctx, string(key), value, duration).Err()
+	return r.rc.Set(item)
 }
 
 func (r *repository) Del(key []byte) error {
@@ -61,20 +79,13 @@ func (r *repository) Del(key []byte) error {
 	r.Lock()
 	defer r.Unlock()
 
-	return r.client.Del(ctx, string(key)).Err()
+	return r.rc.Delete(ctx, string(key))
 }
 
-func (r *repository) EntryCount() (entryCount int64) {
-	//TODO implement me
-	panic("implement me")
+func (r *repository) HitCount() (hitCount uint64) {
+	return r.rc.Stats().Hits
 }
 
-func (r *repository) HitCount() (hitCount int64) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (r *repository) MissCount() (missCount int64) {
-	//TODO implement me
-	panic("implement me")
+func (r *repository) MissCount() (missCount uint64) {
+	return r.rc.Stats().Misses
 }

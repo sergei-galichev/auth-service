@@ -1,14 +1,24 @@
 package user
 
 import (
-	"auth-service/internal/domain/user"
+	"auth-service/internal/delivery/grpc_v1/dto"
 	"auth-service/internal/service/converter"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
-func (s *service) CreateUser(user *user.User) (int64, error) {
-	return s.userRepository.CreateUser(converter.UserDomainToUserDAO(user))
-}
+func (s *service) CreateUser(createDTO *dto.UserCreateDTO) (int64, error) {
+	if !dto.IsValidEmail(createDTO.Email) {
+		return -1, status.Error(codes.InvalidArgument, "invalid email")
+	}
+	if !dto.CheckPasswordsMatch(createDTO.Password, createDTO.ConfirmPassword) {
+		return -1, status.Error(codes.InvalidArgument, "passwords do not match")
+	}
 
-func (s *service) CheckEmail(email string) bool {
-	return user.IsValidEmail(email)
+	d, err := converter.CreateDTOToUserDAO(createDTO)
+	if err != nil {
+		return -1, err
+	}
+
+	return s.userRepository.CreateUser(d)
 }

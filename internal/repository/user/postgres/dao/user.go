@@ -5,8 +5,8 @@ import (
 	"time"
 )
 
-type UserDAO struct {
-	ID        int64        `db:"id"`
+type SaveUserDAO struct {
+	ID        int64        `db:"id,omitempty"`
 	UUID      string       `db:"uuid"`
 	Email     string       `db:"email"`
 	PassHash  []byte       `db:"pass_hash"`

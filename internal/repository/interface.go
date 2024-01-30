@@ -5,5 +5,5 @@ import (
 )
 
 type UserRepository interface {
-	CreateUser(user *dao.UserDAO) (int64, error)
+	CreateUser(user *dao.SaveUserDAO) (int64, error)
 }
