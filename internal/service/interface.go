@@ -5,5 +5,6 @@ import (
 )
 
 type UserService interface {
-	CreateUser(user *dto.UserCreateDTO) (int64, error)
+	CreateUser(dto *dto.UserCreateDTO) (int64, error)
+	LoginUser(dto *dto.UserLoginDTO) (accessToken, refreshToken string, err error)
 }
