@@ -2,36 +2,31 @@ package postgres
 
 import (
 	"auth-service/internal/repository/user/postgres/dao"
-	"auth-service/pkg/tools/transaction"
-	"context"
-	"github.com/jackc/pgx/v5"
 	"github.com/pkg/errors"
 )
 
-func (r *repository) CreateUser(saveUserDAO *dao.SaveUserDAO) (int64, error) {
-	ctx := context.Background()
-	tx, err := r.db.Begin(ctx)
+func (r *repository) CreateUser(user *dao.UserDAO) (int64, error) {
+	res, err := r.session.Collection("users").Insert(user)
+	//_, err := r.session.SQL().InsertInto("users").Values(user).Exec()
 	if err != nil {
-		return -1, errors.New("user repo: begin transaction error")
+		return -1, errors.New("repo: [CreateUser.InsertInto] : " + err.Error())
 	}
 
-	defer func(ctx context.Context, t pgx.Tx) {
-		err = transaction.Finish(ctx, tx, err)
-	}(ctx, tx)
+	return res.ID().(int64), nil
+}
 
-	builder := r.genSQL.Insert("users").Values(saveUserDAO).Suffix("RETURNING id")
-	query, args, err := builder.ToSql()
-	if err != nil {
-		return -1, errors.New("user repo: build sql error")
+func (r *repository) GetUser(user *dao.UserDAO) (*dao.UserDAO, error) {
+	var userDAO dao.UserDAO
+	ok, _ := r.session.Collection("users").
+		Find("email = ?", user.Email).
+		And("password = ?", user.PassHash).
+		Exists()
+	if !ok {
+		return nil, errors.New("repo: [GetUser.Find] : invalid credentials")
 	}
-
-	rows, err := tx.Query(ctx, query, args...)
-	if err != nil {
-		return -1, errors.New("user repo: begin transaction error")
-	}
-
-	defer rows.Close()
-	_ = rows
-
-	return 0, nil
+	//err = r.session.SQL().Select("*").From("users").Where("email = ?", email).One(&userDAO)
+	//if err != nil {
+	//	return nil, errors.New("repo: [GetUser.Select] : " + err.Error())
+	//}
+	return &userDAO, nil
 }

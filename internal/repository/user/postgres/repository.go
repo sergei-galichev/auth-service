@@ -3,24 +3,20 @@ package postgres
 import (
 	repositories "auth-service/internal/repository"
 	"auth-service/pkg/logging"
-	"github.com/Masterminds/squirrel"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/upper/db/v4"
 )
 
-var _ repositories.UserRepository = (*repository)(nil)
+var (
+	_      repositories.UserRepository = (*repository)(nil)
+	logger                             = logging.GetLogger()
+)
 
 type repository struct {
-	db     *pgxpool.Pool
-	genSQL squirrel.StatementBuilderType
-	logger *logging.Logger
+	session db.Session
 }
 
-func New(db *pgxpool.Pool) *repository {
+func New(session db.Session) *repository {
 	return &repository{
-		db: db,
-		genSQL: squirrel.StatementBuilder.PlaceholderFormat(
-			squirrel.Dollar,
-		),
-		logger: logging.GetLogger(),
+		session: session,
 	}
 }
