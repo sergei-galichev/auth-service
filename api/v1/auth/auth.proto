@@ -8,7 +8,7 @@ import "google/protobuf/empty.proto";
 service AuthServiceV1 {
 
   // Register used to user registration
-  rpc Register(RegisterRequest) returns (google.protobuf.Empty){};
+  rpc Register(RegisterRequest) returns (RegisterResponse){};
 
   // Login used to user authentication
   rpc Login(LoginRequest) returns (LoginResponse){};
@@ -29,6 +29,11 @@ message RegisterRequest {
   string confirm_password = 3;
   Role role = 4;
   string admin_key = 5;
+}
+
+message RegisterResponse {
+  string status = 1;
+  string message = 2;
 }
 
 message LoginRequest {
