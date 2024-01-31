@@ -40,7 +40,7 @@ func newServiceProvider(dsn string) *serviceProvider {
 
 func (s *serviceProvider) UserRepository() repositories.UserRepository {
 	if s.userRepo == nil {
-		s.userRepo = userRepo.New(s.storage.Pool)
+		s.userRepo = userRepo.New(s.storage.Session)
 	}
 	s.logger.Debug("UserRepository created")
 
