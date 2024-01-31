@@ -4,14 +4,18 @@ import (
 	"auth-service/internal/delivery/grpc_v1/dto"
 	auth_v1 "auth-service/pkg/grpc/v1/auth"
 	"context"
-	"github.com/golang/protobuf/ptypes/empty"
-	"google.golang.org/grpc"
+	"fmt"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
-func (i *AuthImplementation) Register(ctx context.Context, req *auth_v1.RegisterRequest) (*empty.Empty, error) {
+func (i *AuthImplementation) Register(ctx context.Context, req *auth_v1.RegisterRequest) (
+	*auth_v1.RegisterResponse,
+	error,
+) {
 	_ = ctx
 
-	_, err := i.userService.CreateUser(
+	id, err := i.userService.CreateUser(
 		&dto.UserCreateDTO{
 			Email:           req.GetEmail(),
 			Password:        req.GetPassword(),
@@ -21,18 +25,40 @@ func (i *AuthImplementation) Register(ctx context.Context, req *auth_v1.Register
 		},
 	)
 	if err != nil {
-		return nil, err
+		return &auth_v1.RegisterResponse{
+			Status:  "failed",
+			Message: err.Error(),
+		}, status.Error(codes.Internal, err.Error())
 	}
 
-	return &empty.Empty{}, nil
+	return &auth_v1.RegisterResponse{
+		Status:  "success",
+		Message: fmt.Sprintf("User registered. ID: %d", id),
+	}, nil
 }
 
-func FakeAuthUnaryInterceptor(
-	ctx context.Context,
-	req interface{},
-	info *grpc.UnaryServerInfo,
-	handler grpc.UnaryHandler,
-) (interface{}, error) {
+func (i *AuthImplementation) Login(ctx context.Context, req *auth_v1.LoginRequest) (
+	*auth_v1.LoginResponse,
+	error,
+) {
+	_ = ctx
 
-	return handler(ctx, req)
+	at, rt, err := i.userService.LoginUser(
+		&dto.UserLoginDTO{
+			Email:    req.GetEmail(),
+			Password: req.GetPassword(),
+		},
+	)
+
+	if err != nil {
+		return &auth_v1.LoginResponse{
+			AccessToken:  "",
+			RefreshToken: "",
+		}, status.Error(codes.Internal, err.Error())
+	}
+
+	return &auth_v1.LoginResponse{
+		AccessToken:  at,
+		RefreshToken: rt,
+	}, nil
 }
