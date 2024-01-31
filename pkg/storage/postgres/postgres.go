@@ -2,44 +2,53 @@ package postgres
 
 import (
 	"auth-service/pkg/logging"
-	"context"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"database/sql"
 	"github.com/pkg/errors"
-	"time"
+	"github.com/upper/db/v4"
+	"github.com/upper/db/v4/adapter/postgresql"
+)
+
+var (
+	errorDatabaseConnect = errors.New("postgres: database connection error")
+	errorDatabaseSession = errors.New("postgres: get session error")
+	errorDatabasePing    = errors.New("postgres: database ping error")
+	errorDatabaseClose   = errors.New("postgres: database close connection error")
 )
 
 type Storage struct {
-	Pool *pgxpool.Pool
+	Session db.Session
+	logger  *logging.Logger
 }
 
 func New(dsn string) (*Storage, error) {
 	logger := logging.GetLogger()
-	config, err := pgxpool.ParseConfig(dsn)
+
+	connDB, err := sql.Open("pgx", dsn)
 	if err != nil {
-		logger.Error("Failed to parse postgres config: ", err)
-		return nil, errors.WithStack(err)
+		return nil, errorDatabaseConnect
 	}
 
-	pool, err := pgxpool.NewWithConfig(context.Background(), config)
+	session, err := postgresql.New(connDB)
 	if err != nil {
-		logger.Error("Failed to create postgres pool: ", err)
-		return nil, errors.WithStack(err)
+		return nil, errorDatabaseSession
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	if err = pool.Ping(ctx); err != nil {
-		logger.Error("Failed to ping postgres: ", err)
+	err = session.Ping()
+	if err != nil {
+		return nil, errorDatabasePing
 	}
 
 	logger.Info("Postgres is connected")
 
 	return &Storage{
-		Pool: pool,
+		Session: session,
+		logger:  logger,
 	}, nil
 }
 
 func (s *Storage) Close() {
-	s.Pool.Close()
+	err := s.Session.Close()
+	if err != nil {
+		s.logger.Fatal(errorDatabaseClose)
+	}
 }
