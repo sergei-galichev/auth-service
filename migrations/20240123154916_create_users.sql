@@ -14,7 +14,6 @@ create table users
 );
 
 alter table users owner to postgres;
-create unique index idx_email on users (email);
 -- +goose StatementEnd
 
 -- +goose Down

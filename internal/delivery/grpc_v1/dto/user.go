@@ -1,6 +1,7 @@
 package dto
 
 import (
+	"golang.org/x/crypto/bcrypt"
 	"regexp"
 	"strings"
 )
@@ -16,6 +17,11 @@ type UserCreateDTO struct {
 type UserLoginDTO struct {
 	Email    string
 	Password string
+}
+
+type UserLogoutDTO struct {
+	AccessToken  string
+	RefreshToken string
 }
 
 var regexpEmail = regexp.MustCompile(`^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,4}$`)
@@ -34,4 +40,8 @@ func IsAdminRole(role string) bool {
 
 func IsAdminPasswordValid(adminKey, password string) bool {
 	return adminKey == password
+}
+
+func ComparePassAndHash(pass string, passHash []byte) bool {
+	return bcrypt.CompareHashAndPassword(passHash, []byte(pass)) == nil
 }

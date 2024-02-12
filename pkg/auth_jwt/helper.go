@@ -5,8 +5,8 @@ import (
 	"auth-service/internal/config/env"
 	"auth-service/internal/repository/user/postgres/dao"
 	"auth-service/pkg/logging"
-	"errors"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/pkg/errors"
 	"strconv"
 	"time"
 )
@@ -14,11 +14,13 @@ import (
 type UserClaims struct {
 	jwt.RegisteredClaims
 	Email string
+	UUID  string
+	Role  string
 }
 
 type jwtHelper struct {
 	logger *logging.Logger
-	Cfg    config.AuthConfig
+	cfg    config.AuthConfig
 }
 
 func NewHelper() JWTHelper {
@@ -29,31 +31,103 @@ func NewHelper() JWTHelper {
 	}
 	return &jwtHelper{
 		logger: logger,
-		Cfg:    cfg,
+		cfg:    cfg,
 	}
 }
 
 func (h *jwtHelper) GenerateAccessToken(dao *dao.UserDAO) (string, error) {
-	h.logger.Debug("Create access token")
-
-	key := []byte(h.Cfg.Secret())
-	accessTTL := h.Cfg.AccessTTL()
+	accessTTL := h.AccessTokenTTL()
 
 	claims := UserClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
-			ID: strconv.FormatInt(dao.ID, 10),
+			ID:     strconv.FormatInt(dao.ID, 10),
+			Issuer: "auth-service",
 			Audience: []string{
 				"users",
 			},
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(accessTTL)),
 		},
 		Email: dao.Email,
+		UUID:  dao.UUID,
+		Role:  dao.Role,
 	}
-	t := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	token, err := t.SignedString(key)
+
+	return h.generateToken(&claims)
+}
+
+func (h *jwtHelper) GenerateRefreshToken(dao *dao.UserDAO) (string, error) {
+	refreshTTL := h.RefreshTokenTTL()
+	claims := UserClaims{
+		RegisteredClaims: jwt.RegisteredClaims{
+			ID:     strconv.FormatInt(dao.ID, 10),
+			Issuer: "auth-service",
+			Audience: []string{
+				"users",
+			},
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(refreshTTL)),
+		},
+		Email: dao.Email,
+		UUID:  dao.UUID,
+	}
+
+	return h.generateToken(&claims)
+}
+
+func (h *jwtHelper) generateToken(claims *UserClaims) (string, error) {
+	key := []byte(h.cfg.Secret())
+
+	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString(key)
 	if err != nil {
 		return "", errors.New("jwt: [GenerateAccessToken.SignedString]: " + err.Error())
 	}
 
 	return token, nil
+}
+
+func (h *jwtHelper) validateToken(token string) (bool, error) {
+	key := []byte(h.cfg.Secret())
+
+	t, err := jwt.Parse(
+		token, func(t *jwt.Token) (interface{}, error) {
+			if t.Method.Alg() != jwt.SigningMethodHS256.Alg() {
+				return nil, errors.New("jwt: signing method invalid: ")
+			}
+			return key, nil
+		},
+	)
+	if err != nil {
+		return false, errors.New("jwt: error parsing token")
+	}
+	if t.Valid {
+		return true, nil
+	}
+
+	return false, errors.New("jwt: invalid token")
+}
+
+func (h *jwtHelper) ExchangeRefreshToken(accessToken, refreshToken string) (at, rt string, err error) {
+	//key := []byte(h.cfg.Secret())
+	//t, err := jwt.ParseWithClaims(
+	//	accessToken, &UserClaims{}, func(t *jwt.Token) (interface{}, error) {
+	//		if t.Method.Alg() != jwt.SigningMethodHS256.Alg() {
+	//			return nil, errors.New("jwt: [GetUUIDFromAccessToken.Alg]: " + err.Error())
+	//		}
+	//		return key, nil
+	//	},
+	//)
+	//if err != nil {
+	//	return "", errors.New("jwt: [GetUUIDFromAccessToken.ParseWithClaims]: " + err.Error())
+	//}
+	//claims := t.Claims.(*UserClaims)
+	//return claims.UUID, nil
+
+	return "", "", nil
+}
+
+func (h *jwtHelper) AccessTokenTTL() time.Duration {
+	return h.cfg.AccessTTL()
+}
+
+func (h *jwtHelper) RefreshTokenTTL() time.Duration {
+	return h.cfg.RefreshTTL()
 }

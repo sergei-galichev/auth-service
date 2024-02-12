@@ -29,15 +29,14 @@ func (s *service) CreateUser(createDTO *dto.UserCreateDTO) (int64, error) {
 	return s.userRepository.CreateUser(d)
 }
 
-func (s *service) LoginUser(dto *dto.UserLoginDTO) (accessToken, refreshToken string, err error) {
-	d, err := converter.LoginDTOToUserDAO(dto)
+func (s *service) LoginUser(loginDTO *dto.UserLoginDTO) (accessToken, refreshToken string, err error) {
+	d, err := s.userRepository.GetUserByEmail(loginDTO.Email)
 	if err != nil {
 		return "", "", err
 	}
 
-	d, err = s.userRepository.GetUser(d)
-	if err != nil {
-		return "", "", err
+	if !dto.ComparePassAndHash(loginDTO.Password, d.PassHash) {
+		return "", "", errors.New("service: invalid credentials")
 	}
 
 	accessToken, err = s.jwtHelper.GenerateAccessToken(d)
@@ -45,5 +44,19 @@ func (s *service) LoginUser(dto *dto.UserLoginDTO) (accessToken, refreshToken st
 		return "", "", err
 	}
 
-	return accessToken, d.UUID, nil
+	refreshToken, err = s.jwtHelper.GenerateRefreshToken(d)
+	if err != nil {
+		return "", "", err
+	}
+
+	err = s.userCache.Set([]byte(refreshToken), []byte(accessToken), s.jwtHelper.RefreshTokenTTL())
+	if err != nil {
+		return "", "", err
+	}
+
+	return accessToken, refreshToken, nil
+}
+
+func (s *service) LogoutUser(logoutDTO *dto.UserLogoutDTO) error {
+	return nil
 }

@@ -8,8 +8,8 @@ services:
     ports:
       - "${GRPC_PORT}:${GRPC_PORT}"
     depends_on:
-      postgres:
-        condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
     deploy:
       mode: replicated
       replicas: 1

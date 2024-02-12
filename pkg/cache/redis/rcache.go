@@ -5,6 +5,7 @@ import (
 	"auth-service/pkg/logging"
 	"context"
 	redisCache "github.com/go-redis/cache/v9"
+	"github.com/pkg/errors"
 	"github.com/redis/go-redis/v9"
 	"sync"
 	"time"
@@ -13,7 +14,7 @@ import (
 var _ cache.Repository = (*repository)(nil)
 
 type repository struct {
-	*sync.RWMutex
+	sync.RWMutex
 	rc *redisCache.Cache
 }
 
@@ -32,7 +33,7 @@ func NewCache() cache.Repository {
 
 	err := client.Ping(ctx).Err()
 	if err != nil {
-		logger.Fatal("Failed to ping redis: ", err)
+		logger.Fatal("Failed to ping redis cache: ", err)
 	}
 
 	rc := redisCache.New(
@@ -53,9 +54,12 @@ func (r *repository) Get(key []byte) ([]byte, error) {
 	r.RLock()
 	defer r.RUnlock()
 
-	err := r.rc.Get(ctx, string(key), value)
+	err := r.rc.Get(ctx, string(key), &value)
+	if err != nil {
+		return nil, errors.New("cache: error getting value")
+	}
 
-	return value, err
+	return value, nil
 }
 
 func (r *repository) Set(key []byte, value []byte, duration time.Duration) error {
@@ -70,7 +74,13 @@ func (r *repository) Set(key []byte, value []byte, duration time.Duration) error
 		TTL:   duration,
 	}
 
-	return r.rc.Set(item)
+	err := r.rc.Set(item)
+
+	if err != nil {
+		return errors.New("cache: error setting value")
+	}
+
+	return nil
 }
 
 func (r *repository) Del(key []byte) error {
@@ -79,7 +89,12 @@ func (r *repository) Del(key []byte) error {
 	r.Lock()
 	defer r.Unlock()
 
-	return r.rc.Delete(ctx, string(key))
+	err := r.rc.Delete(ctx, string(key))
+	if err != nil {
+		return errors.New("cache: error deleting value")
+	}
+
+	return nil
 }
 
 func (r *repository) HitCount() (hitCount uint64) {

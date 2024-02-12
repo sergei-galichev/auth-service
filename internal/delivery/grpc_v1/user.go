@@ -5,6 +5,7 @@ import (
 	auth_v1 "auth-service/pkg/grpc/v1/auth"
 	"context"
 	"fmt"
+	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -61,4 +62,20 @@ func (i *AuthImplementation) Login(ctx context.Context, req *auth_v1.LoginReques
 		AccessToken:  at,
 		RefreshToken: rt,
 	}, nil
+}
+
+func (i *AuthImplementation) Logout(ctx context.Context, req *auth_v1.LogoutRequest) (*empty.Empty, error) {
+	_ = ctx
+	err := i.userService.LogoutUser(
+		&dto.UserLogoutDTO{
+			AccessToken:  req.GetAccessToken(),
+			RefreshToken: req.GetRefreshToken(),
+		},
+	)
+
+	if err != nil {
+		return &empty.Empty{}, status.Error(codes.Internal, err.Error())
+	}
+
+	return &empty.Empty{}, nil
 }
