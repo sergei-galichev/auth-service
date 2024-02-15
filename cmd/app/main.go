@@ -19,7 +19,8 @@ func init() {
 	ctx = context.Background()
 
 	// Initialize configuration
-	config.InitDefaultConfig()
+	//config.InitDefaultConfig()
+	config.LoadConfig("dev.env")
 
 	// Initialize logger
 	logging.Init()
