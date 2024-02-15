@@ -16,9 +16,10 @@ type App struct {
 	grpcServer *grpc.Server
 	options    []grpc.ServerOption
 
-	pgCfg   config.PGConfig
-	grpcCfg config.GRPCConfig
-	authCfg config.AuthConfig
+	pgCfg    config.PGConfig
+	redisCfg config.RedisConfig
+	grpcCfg  config.GRPCConfig
+	authCfg  config.AuthConfig
 
 	provider *serviceProvider
 
@@ -74,6 +75,12 @@ func (app *App) initConfig(_ context.Context) error {
 		return errors.WithStack(err)
 	}
 
+	redisCfg, err := env.NewRedisConfig()
+	if err != nil {
+		app.logger.Error("Failed to load redis config: ", err)
+		return errors.WithStack(err)
+	}
+
 	grpcCfg, err := env.NewGRPCConfig()
 	if err != nil {
 		app.logger.Error("Failed to load grpc config: ", err)
@@ -89,12 +96,13 @@ func (app *App) initConfig(_ context.Context) error {
 	app.pgCfg = pgCfg
 	app.grpcCfg = grpcCfg
 	app.authCfg = authCfg
+	app.redisCfg = redisCfg
 
 	return nil
 }
 
 func (app *App) initServiceProvider(_ context.Context) error {
-	app.provider = newServiceProvider(app.pgCfg.DSN())
+	app.provider = newServiceProvider(app.pgCfg, app.redisCfg, app.authCfg)
 	app.logger.Debug("ServiceProvider initialized")
 	app.provider.AuthImplementation()
 	app.logger.Debug("AuthImplementation initialized")
