@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"github.com/joho/godotenv"
 	"github.com/spf13/viper"
 	"time"
 )
@@ -30,4 +31,12 @@ func InitDefaultConfig() {
 	viper.SetDefault("ADMIN_KEY", "admin")
 	viper.SetDefault("ACCESS_TTL", time.Minute*5)
 	viper.SetDefault("REFRESH_TTL", time.Minute*10)
+}
+func LoadConfig(path string) error {
+
+	err := godotenv.Load(path)
+	if err != nil {
+		return err
+	}
+	return nil
 }

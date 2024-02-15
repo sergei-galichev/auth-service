@@ -12,6 +12,10 @@ type PGConfig interface {
 	DSN() string
 }
 
+type RedisConfig interface {
+	Address() string
+}
+
 type LoggingConfig interface {
 	LoggingLevel() string
 }
