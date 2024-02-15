@@ -29,7 +29,7 @@ func (i *AuthImplementation) Register(ctx context.Context, req *auth_v1.Register
 		return &auth_v1.RegisterResponse{
 			Status:  "failed",
 			Message: err.Error(),
-		}, status.Error(codes.Internal, err.Error())
+		}, nil
 	}
 
 	return &auth_v1.RegisterResponse{
