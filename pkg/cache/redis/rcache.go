@@ -18,12 +18,12 @@ type repository struct {
 	rc *redisCache.Cache
 }
 
-func NewCache() cache.Repository {
+func NewCache(address string) cache.Repository {
 	logger := logging.GetLogger()
 
 	client := redis.NewClient(
 		&redis.Options{
-			Addr: "redis-cache:6379",
+			Addr: address,
 			DB:   0,
 		},
 	)
