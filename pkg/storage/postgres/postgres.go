@@ -51,4 +51,6 @@ func (s *Storage) Close() {
 	if err != nil {
 		s.logger.Fatal(errorDatabaseClose)
 	}
+
+	s.logger.Info("Postgres is disconnected")
 }
