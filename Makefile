@@ -63,7 +63,8 @@ up:
 	@echo "Done! Docker images started!"
 
 ## up_build: stops docker-compose (if running), builds all projects and starts docker compose
-up_build: build_auth_service
+#up_build: build_auth_service
+up_build:
 	@echo "Stopping Docker images (if running)..."
 	docker compose down
 	@echo "Done! Docker compose stopped."
@@ -82,3 +83,7 @@ build_auth_service:
 	@echo "Building auth service binary..."
 	env GOOS=linux CGO_ENABLED=0 GOMAXPROCS=4 go build -o $(LOCAL_BIN)/$(AUTH_BIN) ./cmd/app
 	@echo "Done! Auth service binary built."
+
+create_data_dir:
+	mkdir -p ./data/postgres/data/
+	chmod -R 777 ./data/postgres/data/
