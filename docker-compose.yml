@@ -1,27 +1,29 @@
 version: '3.7'
 
 services:
-  auth-service:
-    build:
-      context: ./
-      dockerfile: auth-service.dockerfile
-    ports:
-      - "${GRPC_PORT}:${GRPC_PORT}"
-    depends_on:
-      migrator:
-        condition: service_completed_successfully
-    deploy:
-      mode: replicated
-      replicas: 1
-    environment:
-      PG_DSN: ${PG_DSN}
-      GRPC_HOST: ${GRPC_HOST}
-      GRPC_PORT: ${GRPC_PORT}
-      LOG_LEVEL: ${LOG_LEVEL}
-      SECRET_KEY: ${SECRET_KEY}
-      ADMIN_KEY: ${ADMIN_KEY}
-      ACCESS_TTL: ${ACCESS_TTL}
-      REFRESH_TTL: ${REFRESH_TTL}
+#  auth-service:
+#    build:
+#      context: ./
+#      dockerfile: auth-service.dockerfile
+#    ports:
+#      - "${GRPC_PORT}:${GRPC_PORT}"
+#    depends_on:
+#      migrator:
+#        condition: service_completed_successfully
+#      redis-cache:
+#        condition: service_started
+#    deploy:
+#      mode: replicated
+#      replicas: 1
+#    environment:
+#      PG_DSN: ${PG_DSN}
+#      GRPC_HOST: ${GRPC_HOST}
+#      GRPC_PORT: ${GRPC_PORT}
+#      LOG_LEVEL: ${LOG_LEVEL}
+#      SECRET_KEY: ${SECRET_KEY}
+#      ADMIN_KEY: ${ADMIN_KEY}
+#      ACCESS_TTL: ${ACCESS_TTL}
+#      REFRESH_TTL: ${REFRESH_TTL}
 
   postgres:
     image: 'postgres:14.2-alpine'
@@ -40,7 +42,8 @@ services:
       interval: 1s
       timeout: 5s
       retries: 5
-
+    volumes:
+      - ./data/postgres/data/:/var/lib/postgresql/data/
   redis-cache:
     image: redis:7.2.3-alpine3.18
     restart: always
