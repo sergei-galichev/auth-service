@@ -2,20 +2,15 @@ package auth_jwt
 
 import (
 	"auth-service/internal/config"
-	"auth-service/internal/config/env"
 	"auth-service/internal/repository/user/postgres/dao"
 	"auth-service/pkg/logging"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/pkg/errors"
-	"strconv"
 	"time"
 )
 
 type UserClaims struct {
 	jwt.RegisteredClaims
-	Email string
-	UUID  string
-	Role  string
 }
 
 type jwtHelper struct {
@@ -23,12 +18,8 @@ type jwtHelper struct {
 	cfg    config.AuthConfig
 }
 
-func NewHelper() JWTHelper {
+func NewHelper(cfg config.AuthConfig) JWTHelper {
 	logger := logging.GetLogger()
-	cfg, err := env.NewAuthConfig()
-	if err != nil {
-		logger.Fatal("JWT config error: ", err)
-	}
 	return &jwtHelper{
 		logger: logger,
 		cfg:    cfg,
@@ -36,38 +27,34 @@ func NewHelper() JWTHelper {
 }
 
 func (h *jwtHelper) GenerateAccessToken(dao *dao.UserDAO) (string, error) {
-	accessTTL := h.AccessTokenTTL()
+	accessTTL := h.cfg.AccessTTL()
 
 	claims := UserClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
-			ID:     strconv.FormatInt(dao.ID, 10),
+			ID:     dao.UUID,
 			Issuer: "auth-service",
 			Audience: []string{
 				"users",
 			},
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(accessTTL)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
-		Email: dao.Email,
-		UUID:  dao.UUID,
-		Role:  dao.Role,
 	}
 
 	return h.generateToken(&claims)
 }
 
 func (h *jwtHelper) GenerateRefreshToken(dao *dao.UserDAO) (string, error) {
-	refreshTTL := h.RefreshTokenTTL()
+	refreshTTL := h.cfg.RefreshTTL()
 	claims := UserClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
-			ID:     strconv.FormatInt(dao.ID, 10),
+			ID:     dao.UUID,
 			Issuer: "auth-service",
 			Audience: []string{
 				"users",
 			},
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(refreshTTL)),
 		},
-		Email: dao.Email,
-		UUID:  dao.UUID,
 	}
 
 	return h.generateToken(&claims)
@@ -119,7 +106,7 @@ func (h *jwtHelper) ExchangeRefreshToken(accessToken, refreshToken string) (at, 
 	//	return "", errors.New("jwt: [GetUUIDFromAccessToken.ParseWithClaims]: " + err.Error())
 	//}
 	//claims := t.Claims.(*UserClaims)
-	//return claims.UUID, nil
+	//return claims.uuid, nil
 
 	return "", "", nil
 }
