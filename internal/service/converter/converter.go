@@ -9,20 +9,14 @@ import (
 	"time"
 )
 
-//func UserDomainToUserDAO(user *user.User) *dao.UserDAO {
-//	return &dao.UserDAO{
-//		UUID:      user.UUID,
-//		Email:     user.Email,
-//		PassHash:  []byte(""),
-//		Role:      user.Role,
-//		CreatedAt: time.Now(),
-//	}
-//}
+var (
+	errGeneratePassHash = errors.New("user service: could not hash password")
+)
 
-func CreateDTOToUserDAO(createDTO *dto.UserCreateDTO) (*dao.UserDAO, error) {
+func ConvertCreateDTOToUserDAO(createDTO *dto.UserCreateDTO) (*dao.UserDAO, error) {
 	passHash, err := bcrypt.GenerateFromPassword([]byte(createDTO.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return nil, errors.New("user service: could not hash password")
+		return nil, errGeneratePassHash
 	}
 
 	return &dao.UserDAO{
@@ -37,7 +31,7 @@ func CreateDTOToUserDAO(createDTO *dto.UserCreateDTO) (*dao.UserDAO, error) {
 func LoginDTOToUserDAO(loginDTO *dto.UserLoginDTO) (*dao.UserDAO, error) {
 	passHash, err := bcrypt.GenerateFromPassword([]byte(loginDTO.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return nil, errors.New("user service: could not hash password")
+		return nil, errGeneratePassHash
 	}
 
 	return &dao.UserDAO{
