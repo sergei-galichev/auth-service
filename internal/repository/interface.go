@@ -6,5 +6,6 @@ import (
 
 type UserRepository interface {
 	CreateUser(user *dao.UserDAO) (int64, error)
+	IsUserExists(email string) (bool, error)
 	GetUserByEmail(email string) (*dao.UserDAO, error)
 }

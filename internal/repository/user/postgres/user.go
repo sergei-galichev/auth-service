@@ -6,7 +6,7 @@ import (
 )
 
 var (
-	ErrUserNotFound = errors.New("user not found")
+	errUserNotFound = errors.New("user not found")
 )
 
 func (r *repository) CreateUser(user *dao.UserDAO) (int64, error) {
@@ -18,13 +18,17 @@ func (r *repository) CreateUser(user *dao.UserDAO) (int64, error) {
 	return res.ID().(int64), nil
 }
 
+func (r *repository) IsUserExists(email string) (bool, error) {
+	return r.session.Collection("users").Find("email = ?", email).Exists()
+}
+
 func (r *repository) GetUserByEmail(email string) (*dao.UserDAO, error) {
 	var userDAO dao.UserDAO
 	err := r.session.Collection("users").
 		Find("email = ?", email).
 		One(&userDAO)
 	if err != nil {
-		return nil, ErrUserNotFound
+		return nil, errUserNotFound
 	}
 
 	return &userDAO, nil
