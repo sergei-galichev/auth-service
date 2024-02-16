@@ -18,10 +18,11 @@ type service struct {
 func NewService(
 	userRepository repository.UserRepository,
 	userCache cache.Repository,
+	jwtHelper auth_jwt.JWTHelper,
 ) *service {
 	return &service{
 		userRepository: userRepository,
 		userCache:      userCache,
-		jwtHelper:      auth_jwt.NewHelper(),
+		jwtHelper:      jwtHelper,
 	}
 }
