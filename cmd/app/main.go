@@ -5,6 +5,7 @@ import (
 	"auth-service/internal/config"
 	"auth-service/pkg/logging"
 	"context"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -20,7 +21,10 @@ func init() {
 
 	// Initialize configuration
 	//config.InitDefaultConfig()
-	config.LoadConfig("dev.env")
+	err := config.LoadConfig("dev.env")
+	if err != nil {
+		log.Println("Couldn't load env file")
+	}
 
 	// Initialize logger
 	logging.Init()

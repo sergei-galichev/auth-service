@@ -39,6 +39,9 @@ migration-down:
 format:
 	go fmt ./...
 
+lint:
+	${LOCAL_BIN}/golangci-lint run -v
+
 # GRPC API: generates from proto files
 
 generate:
